@@ -1,0 +1,132 @@
+:root{
+  --bg:#f0f2f5;
+  --card:#ffffff;
+  --border:#d9dde3;
+  --text:#111827;
+  --muted:#6b7280;
+  --primary:#1877f2;
+  --shadow: 0 1px 2px rgba(0,0,0,.06);
+  --radius: 12px;
+}
+*{box-sizing:border-box}
+body{margin:0;font-family:system-ui,-apple-system,Segoe UI,Roboto,Arial,sans-serif;background:var(--bg);color:var(--text)}
+
+.topbar{
+  position:sticky;top:0;z-index:10;
+  display:flex;justify-content:space-between;align-items:center;
+  padding:12px 16px;background:var(--card);border-bottom:1px solid var(--border);
+}
+.brand{display:flex;flex-direction:column;gap:2px}
+.logo{font-weight:800;letter-spacing:.2px}
+.tag{font-size:12px;color:var(--muted)}
+.topbar-right{display:flex;gap:10px;align-items:center}
+.whoami{font-size:13px;color:var(--muted);max-width:340px;white-space:nowrap;overflow:hidden;text-overflow:ellipsis}
+
+.wrap{display:flex;gap:16px;max-width:1200px;margin:0 auto;padding:16px}
+.left,.right{width:280px}
+.center{flex:1;min-width:0}
+
+.card{
+  background:var(--card);
+  border:1px solid var(--border);
+  border-radius:var(--radius);
+  box-shadow:var(--shadow);
+  padding:12px;
+  margin-bottom:12px;
+}
+.card-title{font-weight:700;margin-bottom:10px}
+
+.nav{display:flex;flex-direction:column;gap:6px}
+.nav-item{padding:10px 10px;border-radius:10px;text-decoration:none;color:var(--text)}
+.nav-item:hover{background:#f6f7f9}
+.nav-item.active{background:#e8f0fe;color:#0b57d0;font-weight:700}
+.hint{margin-top:10px;color:var(--muted);font-size:12px;line-height:1.35}
+
+.btn{border:1px solid var(--border);background:#fff;color:var(--text);padding:10px 12px;border-radius:10px;cursor:pointer}
+.btn:hover{background:#f6f7f9}
+.btn:disabled{opacity:.6;cursor:not-allowed}
+.btn.primary{background:var(--primary);border-color:var(--primary);color:#fff}
+.btn.primary:hover{filter:brightness(.98)}
+
+.input{width:100%;padding:10px;border:1px solid var(--border);border-radius:10px;font-size:14px}
+
+.composer-row{display:flex;gap:10px;align-items:center}
+
+.feed{display:flex;flex-direction:column;gap:12px}
+
+.post{
+  background:var(--card);
+  border:1px solid var(--border);
+  border-radius:var(--radius);
+  box-shadow:var(--shadow);
+  padding:12px;
+}
+.post-head{display:flex;gap:10px;align-items:center}
+.avatar{width:40px;height:40px;border-radius:999px;background:#e5e7eb;flex:0 0 auto;overflow:hidden}
+.avatar img{width:100%;height:100%;object-fit:cover;display:block}
+.post-meta{display:flex;flex-direction:column;min-width:0}
+.post-name{font-weight:800;font-size:14px;line-height:1.1}
+.post-sub{font-size:12px;color:var(--muted)}
+.post-body{margin-top:10px;font-size:14px;white-space:pre-wrap;word-break:break-word}
+.media{margin-top:10px;display:flex;flex-wrap:wrap;gap:8px}
+.media img, .media video{max-width:100%;border-radius:12px;border:1px solid var(--border)}
+.actions{margin-top:10px;display:flex;gap:14px;color:var(--muted);font-size:12px}
+.actions span{cursor:default}
+
+.feed-status{padding:10px;color:var(--muted);text-align:center}
+.small{font-size:12px;line-height:1.35}
+.muted{color:var(--muted)}
+
+.chips{display:flex;gap:8px;flex-wrap:wrap}
+.chip{font-size:12px;background:#eef2ff;border:1px solid #dde3ff;color:#374151;padding:6px 10px;border-radius:999px}
+
+
+
+/* ---------------------------
+   Mobile friendly upgrades
+   - Keep navigation visible on mobile (stack layout)
+   - Better touch targets + wrapping
+   --------------------------- */
+
+html, body { height: 100%; }
+img, video { max-width: 100%; height: auto; }
+
+/* Make long strings/URLs never break layout */
+.post-body, .whoami, .card, .post { overflow-wrap: anywhere; word-break: break-word; }
+
+/* Slightly roomier tap targets */
+.btn, .nav-item { min-height: 42px; }
+
+/* Composer: stack nicely when narrow */
+@media (max-width: 820px){
+  .topbar{flex-wrap:wrap; gap:10px}
+  .topbar-right{flex-wrap:wrap; gap:8px}
+  .whoami{max-width:100%; white-space:normal}
+
+  .wrap{
+    flex-direction:column;
+    max-width: 720px;
+    padding:10px;
+  }
+
+  /* Show left menu on mobile (it was hidden before) */
+  .left{display:block; width:100%}
+  .center{width:100%}
+  .right{display:none}
+
+  .card{padding:12px}
+  .composer-row{flex-direction:column; align-items:stretch}
+  .composer-row .btn{width:100%}
+
+  .actions{flex-wrap:wrap; gap:10px}
+}
+
+/* Tablet: keep layout comfortable, hide right sidebar earlier, keep left visible */
+@media (max-width: 1020px){
+  .wrap{max-width: 920px}
+  .right{display:none}
+  .left{width:260px}
+}
+
+
+.select{padding:8px 10px; border:1px solid #ddd; border-radius:10px; background:#fff; font-size:13px;}

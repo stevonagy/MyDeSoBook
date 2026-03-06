@@ -1,0 +1,787 @@
+<!doctype html>
+<html lang="hr">
+<head>
+  <meta charset="utf-8" />
+  <meta name="viewport" content="width=device-width, initial-scale=1" />
+<script src="https://cdn.jsdelivr.net/npm/tus-js-client@4.3.1/dist/tus.min.js"></script>
+
+  <title>My posts - MyDeSoBook</title>
+  <script>
+    // Apply saved theme before paint
+    (function(){
+        var t = localStorage.getItem("mdb_theme");
+        if(t){ document.documentElement.setAttribute("data-theme", t); }
+      }catch(e){}
+    })();
+  </script>
+  <style>
+    body { margin:0; font-family: Arial, sans-serif; background:#f0f2f5; }
+    .topbar { position:sticky; top:0; display:flex; justify-content:space-between; align-items:center;
+      padding:10px 16px; background:#fff; border-bottom:1px solid #ddd; z-index:10; }
+    .wrap { display:flex; gap:16px; max-width:1200px; margin:0 auto; padding:16px; }
+    .left, .right { width:260px; }
+    .center { flex:1; min-width:0; }
+    .card { background:#fff; border:1px solid #ddd; border-radius:10px; padding:12px; margin-bottom:12px; }
+    .btn { border:0; background:#1877f2; color:#fff; padding:10px 12px; border-radius:8px; cursor:pointer; }
+    .btn.secondary { background:#e4e6eb; color:#050505; }
+    .btn:disabled { opacity:.6; cursor:not-allowed; }
+    .input, .textarea { width:100%; padding:10px; border:1px solid #ddd; border-radius:8px; box-sizing:border-box; }
+    .textarea { resize: vertical; min-height: 80px; }
+#editBio { min-height: 320px; }
+    .muted { color:#65676b; font-size:12px; }
+    .row { display:flex; gap:10px; align-items:center; }
+    .row.space { justify-content: space-between; }
+    .post-header { display:flex; justify-content:space-between; gap:10px; }
+    .name { font-weight:700; }
+    .avatar { width:40px; height:40px; border-radius:50%; border:1px solid #ddd; object-fit:cover; background:#f7f7f7; }
+    .post-top { display:flex; gap:10px; align-items:flex-start; }
+    .actions { display:flex; gap:14px; margin-top:10px; }
+    .action { color:#65676b; cursor:pointer; user-select:none; }
+    .action:hover { text-decoration: underline; }
+    .thumbs { display:grid; grid-template-columns: repeat(5, 1fr); gap:8px; margin-top:10px; }
+    .thumb { position:relative; border:1px solid #ddd; border-radius:10px; overflow:hidden; background:#fafafa; }
+    .thumb img { width:100%; height:64px; object-fit:cover; display:block; }
+    .thumb button { position:absolute; top:6px; right:6px; border:0; border-radius:999px; width:22px; height:22px; cursor:pointer; background:rgba(0,0,0,.6); color:#fff; }
+    .media-grid { display:grid; grid-template-columns: repeat(2, 1fr); gap:8px; margin-top:10px; }
+    .media-grid img { width:100%; border-radius:10px; border:1px solid #ddd; object-fit:cover; }
+    .hidden { display:none !important; }
+
+    /* Notifications */
+    .badge { display:inline-flex; align-items:center; justify-content:center; min-width:18px; height:18px;
+      padding:0 6px; border-radius:999px; background:#e41e3f; color:#fff; font-size:11px; font-weight:700; line-height:1;
+      margin-left:8px; }
+    .notif-item { display:flex; gap:10px; align-items:flex-start; }
+    .notif-avatar { width:34px; height:34px; border-radius:50%; border:1px solid #ddd; object-fit:cover; background:#f7f7f7; }
+    .notif-body { min-width:0; flex:1; }
+    .notif-title { font-weight:700; font-size:13px; line-height:1.2; }
+    .notif-text { font-size:13px; margin-top:2px; color:#050505; }
+    .notif-meta { font-size:11px; margin-top:6px; color:#65676b; }
+    .notif-actions { display:flex; gap:8px; margin-top:8px; flex-wrap:wrap; }
+    .linkbtn { border:0; background:#e4e6eb; color:#050505; padding:6px 10px; border-radius:999px; cursor:pointer; font-size:12px; text-decoration:none; display:inline-flex; align-items:center; }
+
+    /* Identity iframe overlay (used on Safari/iOS if storage access needed) */
+    #identity {
+      height: 100vh; width: 100vw; display: none; position: fixed;
+      z-index: 1000; left: 0; top: 0; border: 0;
+    }
+  
+    .btn.secondary.active { outline: 2px solid #1877f2; }
+    .actionbar { display:flex; gap:12px; margin-top:10px; align-items:center; flex-wrap:wrap; }
+    .actionbtn { border:0; background:#e4e6eb; color:#050505; padding:8px 10px; border-radius:999px; cursor:pointer; font-size:13px; }
+    .actionbtn.primary { background:#1877f2; color:#fff; }
+    .pill { color:#65676b; font-size:12px; }
+    .commentbox { margin-top:10px; display:grid; gap:8px; }
+
+  
+    .follow-item { display:flex; gap:10px; align-items:center; min-width:0; }
+    .follow-item .avatar { width:34px; height:34px; flex:0 0 34px; }
+    .follow-name { font-weight:700; font-size:13px; line-height:1.1; white-space:nowrap; overflow:hidden; text-overflow:ellipsis; }
+    .follow-sub { color:#65676b; font-size:12px; white-space:nowrap; overflow:hidden; text-overflow:ellipsis; }
+    .follow-item button { padding:6px 10px; border-radius:10px; flex:0 0 auto; max-width:80px; }
+
+  
+    .follow-item .meta { flex:1; min-width:0; }
+    .tag { font-size:11px; color:#65676b; background:#f0f2f5; padding:2px 8px; border-radius:999px; display:inline-block; margin-top:4px; }
+
+  
+    .recent-item { display:flex; gap:10px; align-items:flex-start; min-width:0; cursor:pointer; }
+    .recent-item .avatar { width:28px; height:28px; flex:0 0 28px; }
+    .recent-body { min-width:0; }
+    .recent-title { font-weight:700; font-size:12px; line-height:1.1; white-space:nowrap; overflow:hidden; text-overflow:ellipsis; }
+    .recent-text { font-size:12px; color:#050505; margin-top:2px; display:-webkit-box; -webkit-line-clamp:3; -webkit-box-orient:vertical; overflow:hidden; }
+    .recent-meta { color:#65676b; font-size:11px; margin-top:4px; }
+
+  
+    /* Icon buttons in post action bar */
+    .actionbtn.iconbtn { display:inline-flex; align-items:center; gap:6px; }
+    .actionbtn.iconbtn svg.icon { width:16px; height:16px; display:block; }
+    .actionbtn .mult { font-size:12px; font-weight:700; line-height:1; }
+    .actionbtn.primary .pill { color: rgba(255,255,255,0.92); }
+
+
+    .btn.secondary.active { outline:2px solid rgba(24,119,242,0.35); }
+    .fav-heart-btn{
+      position:absolute;
+      top:10px;
+      right:12px;
+      background:transparent;
+      border:none;
+      cursor:pointer;
+      font-size:18px;
+      line-height:1;
+      color:#00a650; /* green */
+      opacity:0.55;
+      padding:4px;
+      border-radius:10px;
+      user-select:none;
+    }
+    .fav-heart-btn:hover{ opacity:0.9; background:rgba(0,0,0,0.04); }
+    .fav-heart-btn.faved{ opacity:1; }
+
+    .follow-btn{
+      position:absolute;
+      top:10px;
+      right:44px; /* sits left of heart */
+      background:transparent;
+      border:none;
+      cursor:pointer;
+      font-size:16px;
+      line-height:1;
+      color:#1877f2; /* FB blue */
+      opacity:0.55;
+      padding:4px 6px;
+      border-radius:10px;
+      user-select:none;
+    }
+    .follow-btn:hover{ opacity:0.9; background:rgba(0,0,0,0.04); }
+    .follow-btn.followed{ opacity:1; }
+    .follow-btn:disabled{ opacity:0.35; cursor:not-allowed; }
+
+    /* ---------------------------
+       Mobile friendly upgrades
+       --------------------------- */
+
+    html, body { height: 100%; }
+    img, video { max-width: 100%; height: auto; }
+
+    /* Never let long URLs/text break the layout */
+    .card, .muted, .name, .notif-text, .recent-text, #whoami {
+      overflow-wrap: anywhere;
+      word-break: break-word;
+    }
+
+    /* Keep short composer labels horizontal (avoid letter-by-letter wrapping) */
+    .postto-label, #photoCount {
+      white-space: nowrap;
+      overflow-wrap: normal;
+      word-break: normal;
+      flex: 0 0 auto;
+    }
+
+    /* Better touch targets */
+    .btn, .linkbtn, .actionbtn { min-height: 42px; }
+
+    /* Tablet: hide right sidebar earlier */
+    @media (max-width: 1020px){
+      .right { display:none; }
+      .wrap { max-width: 920px; }
+    }
+
+    /* Mobile: stack layout, show menu on top, simplify grids */
+    @media (max-width: 820px){
+      .topbar { flex-wrap: wrap; gap: 10px; }
+      .topbar .row { flex-wrap: wrap; gap: 8px; width: 100%; justify-content: flex-start; }
+      #loginBtn, #logoutBtn { width: 100%; }
+      #whoami { width: 100%; }
+
+      .wrap { flex-direction: column; max-width: 720px; padding: 10px; }
+      .left, .center { width: 100%; }
+      .left, .right { width: 100%; }
+      .right { display:none; }
+
+      .card { padding: 12px; }
+
+      /* Composer: stack controls */
+      .row.space { flex-wrap: wrap; gap: 10px; }
+      #addPhotosBtn, #postBtn { width: 100%; }
+      .thumbs { grid-template-columns: repeat(3, 1fr); }
+      .thumb img { height: 72px; }
+
+      .media-grid { grid-template-columns: 1fr; }
+
+      /* Post header wraps nicer */
+      .post-top { align-items: flex-start; }
+      .post-header { flex-wrap: wrap; }
+    }
+
+    .post-video{width:100%; max-height:520px; border-radius:10px; border:1px solid #ddd; background:#000; margin-top:10px;}
+
+  
+    .video-open-link { margin-top:6px; font-size:12px; }
+    .video-open-link a { color:#1877f2; text-decoration:none; }
+    .video-open-link a:hover { text-decoration:underline; }
+
+  
+
+/* Stories */
+    .stories-bar { display:flex; gap:12px; overflow-x:auto; padding:6px 2px 2px; }
+    .story-item { width:74px; flex:0 0 74px; text-align:center; cursor:pointer; user-select:none; }
+    .story-avatar { width:56px; height:56px; border-radius:50%; border:3px solid #1877f2; object-fit:cover; background:#f7f7f7; }
+    .story-label { font-size:11px; color:#050505; margin-top:6px; white-space:nowrap; overflow:hidden; text-overflow:ellipsis; }
+    .story-add .story-avatar { border:2px dashed #bbb; display:flex; align-items:center; justify-content:center; font-weight:800; font-size:22px; color:#1877f2; background:#fff; }
+    .story-modal { position:fixed; inset:0; background:rgba(0,0,0,0.72); z-index:9999; display:flex; align-items:center; justify-content:center; padding:16px; }
+    .story-modal-card { width:min(520px, 96vw); background:#111; border-radius:14px; overflow:hidden; border:1px solid rgba(255,255,255,0.12); }
+    .story-modal-top { display:flex; justify-content:space-between; align-items:center; padding:10px 12px; color:#fff; }
+    .story-modal-top .muted { color:rgba(255,255,255,0.75); }
+    .story-modal-img { width:100%; max-height:min(72vh, 720px); object-fit:contain; display:block; background:#000; }
+    .icon-x { background:transparent; border:0; color:#fff; font-size:20px; cursor:pointer; padding:6px 10px; border-radius:10px; }
+    .icon-x:hover { background:rgba(255,255,255,0.10); }
+
+
+    .story-modal-actions{
+      display:flex;
+      gap:12px;
+      justify-content:flex-end;
+      padding:10px 12px;
+      background:#111;
+      border-top:1px solid rgba(255,255,255,0.10);
+    }
+    .story-modal-actions a{
+      color:#fff;
+      font-size:13px;
+      text-decoration:none;
+      padding:8px 10px;
+      border-radius:10px;
+      background:rgba(255,255,255,0.10);
+    }
+    .story-modal-actions a:hover{ background:rgba(255,255,255,0.18); }
+
+  
+    /* Groups: pinned */
+    .pinned-card{border:1px solid #1877f2; border-radius:12px; padding:12px; background:#f5f9ff;}
+    .pinned-title{display:flex; justify-content:space-between; align-items:center; gap:12px;}
+    .pinned-title b{color:#1877f2;}
+    .pin-btn{font-size:12px; padding:6px 10px; border-radius:10px; border:1px solid #ddd; background:#fff; cursor:pointer;}
+    .pin-btn:hover{background:#f0f2f5;}
+
+  
+.select{padding:8px 10px; border:1px solid #ddd; border-radius:10px; background:#fff; font-size:13px;}
+
+    /* Dark mode + mobile sidebar (non-invasive overrides) */
+    :root{
+      --bg:#f0f2f5;
+      --card:#ffffff;
+      --border:#d9dde3;
+      --text:#111827;
+      --muted:#6b7280;
+      --chip:#e4e6eb;
+      --chipText:#050505;
+      --shadow: 0 1px 2px rgba(0,0,0,.06);
+
+      --like:#FF3B30;
+      --comment:#0A84FF;
+      --repost:#34C759;
+      --diamond:#AF52DE;
+    }
+    html[data-theme="dark"]{
+      --bg:#0b0f17;
+      --card:#111827;
+      --border:rgba(255,255,255,.12);
+      --text:#e5e7eb;
+      --muted:#9ca3af;
+      --chip:rgba(255,255,255,.08);
+      --chipText:#e5e7eb;
+      --shadow: 0 1px 2px rgba(0,0,0,.35);
+    }
+
+    body { background: var(--bg) !important; color: var(--text) !important; }
+    .topbar { background: var(--card) !important; border-bottom: 1px solid var(--border) !important; }
+    .card { background: var(--card) !important; border: 1px solid var(--border) !important; box-shadow: var(--shadow) !important; }
+    .muted { color: var(--muted) !important; }
+
+    .btn.secondary { background: var(--chip) !important; color: var(--chipText) !important; }
+    .actionbtn { background: var(--chip) !important; color: var(--chipText) !important; }
+    .input, .textarea, .select { background: var(--card) !important; color: var(--text) !important; border:1px solid var(--border) !important; }
+    .linkbtn { color: var(--primary, #1877f2) !important; }
+
+    /* Topbar icon buttons */
+    .iconbtn.topicon{
+      min-height: 38px;
+      padding: 8px 10px;
+      border-radius: 10px;
+      border: 1px solid var(--border);
+      background: var(--card);
+      cursor: pointer;
+      line-height: 1;
+    }
+    .iconbtn.topicon:hover{ filter: brightness(0.98); }
+    .menu-toggle{ display:none; } /* show only on mobile */
+
+    /* Colored action icons */
+    .actionbtn.like-btn { color: var(--like) !important; }
+    .actionbtn.comment-toggle { color: var(--comment) !important; }
+    .actionbtn.repost-btn { color: var(--repost) !important; }
+    .actionbtn.diamond-btn { color: var(--diamond) !important; }
+
+    /* Like active state: red tint + filled heart */
+    .actionbtn.like-btn.primary{
+      background: rgba(255,59,48,0.16) !important;
+      color: var(--like) !important;
+    }
+    .actionbtn.like-btn.primary svg path{ fill: currentColor; }
+
+    /* Sidebar overlay */
+    .sidebar-overlay{
+      position:fixed; inset:0;
+      background: rgba(0,0,0,0.35);
+      backdrop-filter: blur(2px);
+      z-index: 1999;
+    }
+    .sidebar-overlay.hidden{ display:none; }
+
+    /* Auth slots */
+    .top-auth{
+      display:flex;
+      gap:10px;
+      align-items:center;
+      flex-wrap:wrap;
+    }
+    .top-auth:empty{ display:none; }
+
+    .sidebar-close{ display:none; } /* shown on mobile */
+    .sidebar-auth{ display:none; }  /* shown on mobile */
+
+    @media (max-width: 820px){
+      /* show menu toggle on mobile */
+      .menu-toggle{ display:inline-flex; align-items:center; justify-content:center; }
+
+      /* Hide the auth controls from the topbar on mobile (they are moved into the menu) */
+      #topAuthSlot{ display:none !important; }
+
+      /* Show close button + auth block inside sidebar */
+      .sidebar-close{ display:inline-flex; }
+      .sidebar-auth{ display:grid; gap:8px; }
+      .sidebar-auth #whoami{ display:block; width:100%; }
+      .sidebar-auth #loginBtn, .sidebar-auth #logoutBtn{ width:100%; }
+
+      /* make left sidebar slide-in from right (transform avoids 1-2px "visible strip") */
+      .left{
+        position:fixed;
+        top:0; right:0;
+        height:100vh;
+        width:min(340px, 92vw);
+        overflow:auto;
+        padding:12px;
+        z-index:2000;
+        background: var(--bg) !important;
+        transform: translateX(110%);
+        transition: transform .20s ease;
+        will-change: transform;
+      }
+      body.menu-open .left{ transform: translateX(0); }
+      body.menu-open{ overflow:hidden; }
+
+      /* ensure center uses full width */
+      .wrap{ padding:10px; }
+    }
+    
+
+    /* --- Mobile composer tweaks (final touch) --- */
+    .photos-wrap{ display:flex; align-items:center; gap:8px; }
+
+    @media (max-width: 820px){
+      /* Allow wrapping inside composer controls row, but keep things full-width */
+      .composer-controls{ flex-wrap: wrap; gap: 10px; width: 100%; }
+      /* "Post to" row should take the full width */
+      .composer-controls > div.row{ flex: 1 1 100%; }
+
+      /* Make media buttons consistent */
+      #addPhotosBtn, #addVideoBtn, #postBtn{ width: 100%; }
+
+      /* Keep 0/5 on the same line as Add photos (as a badge) */
+      .photos-wrap{ position: relative; width: 100%; display:block; }
+      .photos-wrap #addPhotosBtn{ width:100%; padding-right:64px; }
+      .photos-wrap #photoCount{
+        position:absolute; right:14px; top:50%;
+        transform:translateY(-50%);
+        font-size:12px; opacity:.85;
+        pointer-events:none;
+      }
+
+      /* Prevent narrow-column weirdness during video upload */
+      .composer-controls #videoChip,
+      .composer-controls #videoProgress{ flex: 1 1 100%; }
+      .composer-controls #videoProgress{
+        white-space: nowrap;
+        overflow: hidden;
+        text-overflow: ellipsis;
+      }
+    }
+
+</style>
+</head>
+<body>
+  <div class="topbar">
+    <div><b>MyDeSoBook</b> <span class="muted">A place where my posts are fully decentralised</span></div>
+    <div class="row">
+      <button id="menuToggle" class="iconbtn topicon menu-toggle" type="button" aria-label="Open menu">⋯</button>
+      <button id="themeToggle" class="iconbtn topicon theme-toggle" type="button" aria-label="Toggle theme">🌙</button>
+
+      <!-- Auth controls (moved into sidebar on mobile via JS for more space) -->
+      <div id="topAuthSlot" class="top-auth">
+        <span id="whoami" class="muted"></span>
+        <button id="loginBtn" class="btn">Login with DeSo</button>
+        <button id="logoutBtn" class="btn secondary hidden">Logout</button>
+      </div>
+    </div>
+  </div>
+
+  <div id="sidebarOverlay" class="sidebar-overlay hidden" aria-hidden="true"></div>
+
+  <div class="wrap">
+    <div class="left" id="sidebar">
+      <div class="card">
+        <div class="row space" style="align-items:center;">
+          <b>Menu</b>
+          <button id="sidebarClose" class="iconbtn topicon sidebar-close" type="button" aria-label="Close menu">✕</button>
+        </div>
+
+        <!-- Auth controls appear here on mobile -->
+        <div id="sidebarAuthSlot" class="sidebar-auth" style="margin-top:10px;"></div>
+
+        <div id="menu" style="margin-top:10px; display:grid; gap:8px;">
+          <button class="btn secondary" data-route="home" type="button">Home</button>
+          <button class="btn secondary" data-route="profile" type="button">Profile</button>
+          <button class="btn secondary" data-route="groups" type="button">Groups</button>
+          <button class="btn secondary" data-route="notifications" type="button">Notifications <span id="notifBadge" class="badge hidden">0</span></button>
+          <button class="btn secondary" type="button" onclick="window.open('https://mytalkzone.xyz/', '_blank', 'noopener,noreferrer')">MyTalkZone</button>
+          <button class="btn secondary" type="button" onclick="window.open('https://myplayzone.xyz/', '_blank', 'noopener,noreferrer')">MyPlayZone</button>
+        </div>
+        <div class="muted" style="margin-top:10px;"></div>
+      </div>
+      <div class="card">
+        <div><b>Check your posts on:</b></div>
+
+        
+        <div id="postCheckLinks" style="margin-top:10px; display:grid; gap:8px;">
+          <button style="width:100%;" class="btn secondary" type="button" onclick="window.open('https://safetynet.social/browse?feedTab=Hot', '_blank', 'noopener,noreferrer')">SafetyNet</button>
+          <button style="width:100%;" class="btn secondary" type="button" onclick="window.open('https://desocialworld.com/browse?feedTab=feed.tab.recent', '_blank', 'noopener,noreferrer')">Desocialworld</button>
+          <button style="width:100%;" class="btn secondary" type="button" onclick="window.open('https://beyondsocial.app/', '_blank', 'noopener,noreferrer')">Beyondsocial</button>
+        </div>
+
+
+      </div>
+    </div>
+
+    <div class="center">
+      <div id="homeView">
+      <div class="card">
+        <div class="row" style="align-items:flex-start;">
+          <img id="composerAvatar" class="avatar" alt="" />
+          <div style="flex:1;">
+            <textarea id="postText" class="textarea" placeholder="What do you want to share with the world today?"></textarea>
+
+            <div class="row space" style="margin-top:10px;">
+              <div class="row composer-controls">
+                <input id="imageInput" type="file" accept="image/png,image/jpeg,image/gif,image/webp" multiple class="hidden" />
+                <div class="row" style="gap:8px; align-items:center;"><span class="muted postto-label" style="font-size:12px;">Post to:</span><select id="postGroupSelect" class="select"><option value="">Public</option></select></div>
+<div class="photos-wrap">
+
+  <button id="addPhotosBtn" class="btn secondary" type="button">Add photos</button>
+
+  <span id="photoCount" class="muted">0/5</span>
+
+</div>
+<input id="videoInput" type="file" accept="video/*" class="hidden" />
+<button id="addVideoBtn" class="btn secondary" type="button">Add video</button>
+
+<span id="videoChip" class="muted hidden" style="display:inline-flex; align-items:center; gap:8px;">
+  <span id="videoName"></span>
+  <button id="removeVideoBtn" class="btn secondary" type="button" style="padding:6px 10px; border-radius:999px;">✕</button>
+</span>
+
+<div id="videoProgress" class="muted small hidden" style="margin-top:6px;"></div>
+
+              </div>
+              <button id="postBtn" class="btn" disabled>Submit post</button>
+            </div>
+
+            <div class="row" style="margin-top:10px; gap:10px; align-items:center; flex-wrap:wrap;">
+              <label class="row" style="gap:8px; align-items:center; cursor:pointer;">
+                <input type="checkbox" id="fbShareToggle" />
+                <span>Share on Facebook after posting</span>
+              </label>
+              <span class="muted" style="font-size:12px;"></span>
+            </div>
+
+            <div id="thumbs" class="thumbs"></div>
+            <div id="postStatus" class="muted" style="margin-top:8px;"></div>
+          </div>
+        </div>
+      </div>
+
+
+      
+      <div class="card" id="storiesCard">
+        <div class="row space" style="align-items:center;">
+          <b>Stories</b>
+          <button id="refreshStoriesBtn" class="btn secondary" type="button" style="padding:6px 10px; border-radius:10px;">Refresh</button>
+        </div>
+        <div id="storiesStatus" class="muted" style="margin-top:6px;"></div>
+        <div id="storiesBar" class="stories-bar" style="margin-top:10px;"></div>
+        <input id="storyInput" class="hidden" type="file" accept="image/*" />
+      </div>
+
+<div class="card" id="feedTabsCard">
+        <div class="row space" style="align-items:center;">
+          <div class="row" style="gap:8px;">
+            <button id="tabFollowing" class="btn secondary active" type="button">Following</button>
+            <button id="tabGlobal" class="btn secondary" type="button">Global</button>
+            <button id="tabFavorite" class="btn secondary" type="button">Favorite</button>
+          </div>
+          <button id="refreshFeedBtn" class="btn secondary" type="button" style="padding:6px 10px; border-radius:10px;">Refresh</button>
+        </div>
+      </div>
+
+      <div id="feed"></div>
+      <div id="feedStatus" class="muted"></div>
+      </div>
+
+      <div id="profileView" class="hidden">
+        <div class="card" id="profileHeader"></div>
+        <div id="profilePosts"></div>
+        <div id="profileStatus" class="muted"></div>
+      </div>
+
+      <div id="notificationsView" class="hidden">
+        <div class="card">
+          <div class="row space" style="align-items:center;">
+            <b>Notifications</b>
+            <button id="refreshNotificationsBtn" class="btn secondary" type="button" style="padding:6px 10px; border-radius:10px;">Refresh</button>
+          </div>
+          <div id="notificationsStatus" class="muted" style="margin-top:6px;"></div>
+        </div>
+        <div id="notificationsList"></div>
+      </div>
+
+      <div id="postView" class="hidden">
+        <div class="card">
+          <div class="row space" style="align-items:center;">
+            <b id="postViewTitle">Post</b>
+            <button id="postBackBtn" class="btn secondary" type="button" style="padding:6px 10px; border-radius:10px;">Back</button>
+          </div>
+          <div id="postDetailStatus" class="muted" style="margin-top:6px;"></div>
+        </div>
+        <div id="postDetail"></div>
+      </div>
+
+      
+      <div id="groupsView" class="hidden">
+        <div class="card">
+          <div class="row space" style="align-items:center;">
+            <b>Groups</b>
+            <button id="groupsRefreshBtn" class="btn secondary" type="button">Refresh</button>
+          </div>
+          <div id="groupsStatus" class="muted" style="margin-top:6px;"></div>
+
+          <div style="margin-top:14px;">
+            <b>Create a group</b>
+            <div class="muted" style="margin-top:6px;">Note: Every post in the group is also a public post. There are no secrets on blockchain.</div>
+            <div class="row" style="gap:10px; margin-top:10px; flex-wrap:wrap;">
+              <input id="groupNameInput" class="input" placeholder="Group name" style="flex:1; min-width:240px;" />
+              <input id="groupDescInput" class="input" placeholder="Description (optional)" style="flex:2; min-width:280px;" />
+              <button id="createGroupBtn" class="btn primary" type="button">Create</button>
+            </div>
+          </div>
+
+          <div style="margin-top:16px; border-top:1px solid #eee; padding-top:16px;">
+            <b>Import a group</b>
+            <div class="muted" style="margin-top:6px;">Paste the manifest PostHashHex (or node.deso.org URL) to import.</div>
+            <div class="row" style="gap:10px; margin-top:10px; flex-wrap:wrap;">
+              <input id="importGroupInput" class="input" placeholder="Post hash or URL" style="flex:1; min-width:340px;" />
+              <button id="importGroupBtn" class="btn secondary" type="button">Import</button>
+            </div>
+          </div>
+
+          <div style="margin-top:16px; border-top:1px solid #eee; padding-top:16px;">
+            <div class="row space" style="align-items:center;">
+              <b>My groups</b>
+              <span class="muted" id="myGroupsCount"></span>
+            </div>
+            <div id="groupsList" style="margin-top:10px; display:grid; gap:10px;"></div>
+          </div>
+        </div>
+      </div>
+
+      <div id="groupView" class="hidden">
+        <div class="card">
+          <div class="row space" style="align-items:center;">
+            <div>
+              <b id="groupTitle">Group</b>
+              <div id="groupSubtitle" class="muted" style="margin-top:4px;"></div>
+            </div>
+            <div class="row" style="gap:10px;">
+              <button id="groupShareBtn" class="btn secondary" type="button">Share</button>
+              <button id="groupJoinBtn" class="btn secondary" type="button">Join</button>
+              <button id="groupLeaveBtn" class="btn secondary hidden" type="button">Leave</button>
+            </div>
+          </div>
+
+          <div class="row space" style="align-items:center; margin-top:12px;">
+            <div class="muted" id="groupIdLine"></div>
+            <button id="groupCopyIdBtn" class="btn secondary" type="button">Copy GroupId</button>
+          </div>
+
+          <div class="row space" style="align-items:center; margin-top:12px;">
+            <b>Posts</b>
+            <button id="groupRefreshBtn" class="btn secondary" type="button">Refresh</button>
+          </div>
+          <div id="groupFeedStatus" class="muted" style="margin-top:6px;"></div>
+          <div id="groupPinned" class="hidden" style="margin-top:10px;"></div>
+          <div id="groupFeed" style="margin-top:10px; display:grid; gap:12px;"></div>
+          <div class="row" style="justify-content:center; margin-top:12px;">
+            <button id="groupLoadMoreBtn" class="btn secondary" type="button">Load more</button>
+          </div>
+        </div>
+      </div>
+
+
+<div id="messagesView" class="hidden">
+        <div class="card"><b>Messages</b><div class="muted" style="margin-top:6px;">(coming soon)</div></div>
+      </div>
+
+      <div id="userInfoView" class="hidden">
+        <div class="card" id="userInfoCard"></div>
+        <div class="card" id="userInfoLinks"></div>
+      </div>
+    </div>
+
+    <div class="right">
+      <div class="card">
+        <div><b>Recent posts</b></div>
+<div style="margin-top:12px; border-top:1px solid #eee; padding-top:12px;">
+          <div class="row space" style="align-items:center;">
+            <b style="font-size:14px;">Recent posts</b>
+            <button id="refreshRecentBtn" class="btn secondary" type="button" style="padding:6px 10px; border-radius:10px;">Refresh</button>
+          </div>
+          <div id="recentStatus" class="muted" style="margin-top:6px;"></div>
+          <div id="recentList" style="margin-top:10px; display:grid; gap:10px;"></div>
+        </div>
+      </div>
+
+      <div class="card">
+        <div class="row space" style="align-items:center;">
+          <b>Following</b>
+          <button id="refreshFollowingBtn" class="btn secondary" type="button" style="padding:6px 10px; border-radius:10px;">Refresh</button>
+        </div>
+        <div id="followingStatus" class="muted" style="margin-top:6px;"></div>
+        <input id="followingSearch" class="input" placeholder="Search following (username or key)..." style="margin-top:10px;" />
+        <div id="followingList" style="margin-top:10px; display:grid; gap:10px;"></div>
+      </div>
+    </div>
+  </div>
+<script src="https://cdn.jsdelivr.net/npm/hls.js@1.5.18"></script>
+
+
+
+
+
+<div id="storyModal" class="story-modal hidden">
+  <div class="story-modal-card">
+    <div class="story-modal-top">
+      <div>
+        <b id="storyModalName">Story</b>
+        <div id="storyModalTime" class="muted"></div>
+      </div>
+      <button id="storyModalClose" class="icon-x" type="button">×</button>
+    </div>
+    <img id="storyModalImg" class="story-modal-img" alt="story" />
+    <div class="story-modal-actions">
+      <a id="storyOpenImg" href="#" target="_blank" rel="noreferrer">Open image</a>
+      <a id="storyOpenPost" href="#" target="_blank" rel="noreferrer">Open post</a>
+    </div>
+  </div>
+</div>
+
+
+<script>
+  (function(){
+    // Theme toggle
+    var themeBtn = document.getElementById("themeToggle");
+    function currentTheme(){
+      return document.documentElement.getAttribute("data-theme") || "light";
+    }
+    function setTheme(t){
+      document.documentElement.setAttribute("data-theme", t);
+      try{ localStorage.setItem("mdb_theme", t); }catch(e){}
+      if(themeBtn){
+        themeBtn.textContent = (t === "dark") ? "☀️" : "🌙";
+      }
+    }
+    if(themeBtn){
+      // init icon
+      themeBtn.textContent = (currentTheme() === "dark") ? "☀️" : "🌙";
+      themeBtn.addEventListener("click", function(){
+        setTheme(currentTheme() === "dark" ? "light" : "dark");
+      });
+    }
+
+    // Mobile menu toggle
+    var menuBtn = document.getElementById("menuToggle");
+    var overlay = document.getElementById("sidebarOverlay");
+    function closeMenu(){
+      document.body.classList.remove("menu-open");
+      if(overlay){
+        overlay.classList.add("hidden");
+        overlay.setAttribute("aria-hidden","true");
+      }
+    }
+    function openMenu(){
+      document.body.classList.add("menu-open");
+      if(overlay){
+        overlay.classList.remove("hidden");
+        overlay.setAttribute("aria-hidden","false");
+      }
+    }
+    if(menuBtn){
+      menuBtn.addEventListener("click", function(){
+        if(document.body.classList.contains("menu-open")) closeMenu();
+        else openMenu();
+      });
+    }
+    if(overlay){
+      overlay.addEventListener("click", closeMenu);
+    }
+    document.addEventListener("keydown", function(e){
+      if(e.key === "Escape") closeMenu();
+    });
+    // Close menu after selecting an option inside sidebar (mobile UX)
+    var sidebar = document.getElementById("sidebar");
+    if(sidebar){
+      sidebar.addEventListener("click", function(e){
+        var t = e.target;
+        if(!t) return;
+        // close if clicking a button/link inside sidebar
+        if(t.tagName === "BUTTON" || t.tagName === "A"){
+          setTimeout(closeMenu, 0);
+        }
+      });
+    }
+
+    // Explicit X close button (requested)
+    var closeBtn = document.getElementById("sidebarClose");
+    if(closeBtn){
+      closeBtn.addEventListener("click", closeMenu);
+    }
+
+    // Move login/logout + whoami into sidebar on mobile for more composer space
+    var mql = window.matchMedia("(max-width: 820px)");
+    var topSlot = document.getElementById("topAuthSlot");
+    var sidebarSlot = document.getElementById("sidebarAuthSlot");
+    function relocateAuth(){
+      var who = document.getElementById("whoami");
+      var login = document.getElementById("loginBtn");
+      var logout = document.getElementById("logoutBtn");
+      if(!who || !login || !logout || !topSlot || !sidebarSlot) return;
+
+      if(mql.matches){
+        sidebarSlot.appendChild(who);
+        sidebarSlot.appendChild(login);
+        sidebarSlot.appendChild(logout);
+      } else {
+        topSlot.appendChild(who);
+        topSlot.appendChild(login);
+        topSlot.appendChild(logout);
+        closeMenu();
+      }
+    }
+    relocateAuth();
+    if(mql.addEventListener) mql.addEventListener("change", relocateAuth);
+    else if(mql.addListener) mql.addListener(relocateAuth);
+
+  })();
+</script>
+
+<script type="module" src="./app.js"></script>
+</body>
+</html>
